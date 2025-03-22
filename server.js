@@ -1,9 +1,10 @@
 const express = require('express');
 const fs = require('fs').promises;
 const path = require('path');
+const crypto = require('crypto');
 
 const app = express();
-const PORT = 80;
+const PORT = 3000;
 
 // 数据文件路径
 const DATA_DIR = path.join(__dirname, 'data');
@@ -43,21 +44,46 @@ async function saveUsersData(data) {
     await fs.writeFile(USERS_FILE, JSON.stringify(data, null, 2));
 }
 
+// 计算密码哈希
+function hashPassword(password) {
+    return crypto.createHash('sha256').update(password).digest('hex');
+}
+
 // 获取用户的密码库文件路径
 function getUserVaultPath(username) {
     return path.join(DATA_DIR, `vault_${username}.json`);
 }
 
 // API路由
+// 登录验证
+app.post('/api/login', async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        const usersData = await getUsersData();
+        const user = usersData.users[username];
+        
+        if (!user) {
+            res.json({ success: false });
+            return;
+        }
+        
+        const hashedPassword = hashPassword(password);
+        res.json({ success: user.hash === hashedPassword });
+    } catch (error) {
+        console.error('登录验证失败:', error);
+        res.status(500).json({ success: false, error: '验证失败' });
+    }
+});
+
 // 保存主密码哈希
 app.post('/api/save-master-hash', async (req, res) => {
     try {
-        const { username, hash } = req.body;
+        const { username, password } = req.body;
         await ensureDataDir();
         
         const usersData = await getUsersData();
         usersData.users[username] = {
-            hash,
+            hash: hashPassword(password),
             createdAt: new Date().toISOString()
         };
         await saveUsersData(usersData);
@@ -165,6 +191,6 @@ app.delete('/api/delete-user/:username', async (req, res) => {
 });
 
 // 启动服务器
-app.listen(PORT, () => {
-    console.log(`服务器运行在 http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`服务器运行在端口 ${PORT}`);
 }); 

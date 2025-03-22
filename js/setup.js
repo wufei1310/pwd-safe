@@ -72,16 +72,21 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            // 生成密码哈希
-            const encoder = new TextEncoder();
-            const passwordBuffer = encoder.encode(newPassword);
-            const hash = await crypto.subtle.digest('SHA-256', passwordBuffer);
-            const hashHex = Array.from(new Uint8Array(hash))
-                .map(b => b.toString(16).padStart(2, '0'))
-                .join('');
+            // 保存用户信息和主密码
+            const response = await fetch('/api/save-master-hash', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username,
+                    password: newPassword
+                })
+            });
 
-            // 保存用户信息和主密码哈希
-            await StorageManager.saveMasterHash(username, hashHex);
+            if (!response.ok) {
+                throw new Error('保存失败');
+            }
 
             // 初始化空的密码库
             const emptyVault = {
