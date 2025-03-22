@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 初始化
     const init = async () => {
         try {
+            // 显示当前用户名
+            document.getElementById('currentUserDisplay').textContent = currentUser;
+            
             // 加载密码库
             currentVault = await StorageManager.loadVault(currentUser);
             if (!currentVault) {
@@ -21,7 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await refreshPasswordList();
         } catch (error) {
             console.error('初始化失败:', error);
-            alert('加载密码失败');
+            await Modal.error('加载密码失败');
         }
     };
 
