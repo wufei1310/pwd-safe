@@ -41,16 +41,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 创建密码卡片
     const createPasswordCard = (entry) => {
         const card = document.createElement('div');
-        card.className = 'bg-white p-4 rounded-lg shadow-sm hover:shadow-md transition duration-200';
+        card.className = 'glass-effect p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1';
         card.innerHTML = `
-            <div class="flex justify-between items-start mb-2">
-                <h3 class="text-lg font-semibold text-gray-800">${entry.title}</h3>
-                <span class="text-sm text-gray-500">${entry.category || '未分类'}</span>
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-xl font-semibold text-gray-800">${entry.title}</h3>
+                <span class="text-sm text-gray-500 px-3 py-1 bg-gray-100 rounded-full">${entry.category || '未分类'}</span>
             </div>
-            <p class="text-gray-600 mb-2">${entry.username}</p>
+            <p class="text-gray-600 mb-4">${entry.username}</p>
             <div class="flex justify-between items-center">
-                <button class="text-blue-500 hover:text-blue-600 view-btn">查看</button>
-                <button class="text-gray-500 hover:text-gray-600 edit-btn">编辑</button>
+                <button class="text-blue-500 hover:text-blue-600 flex items-center view-btn">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                    查看
+                </button>
+                <button class="text-gray-500 hover:text-gray-600 flex items-center edit-btn">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                    编辑
+                </button>
             </div>
         `;
 
@@ -66,13 +77,23 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
 
         // 编辑按钮点击事件
-        card.querySelector('.edit-btn').addEventListener('click', () => {
-            document.getElementById('passwordForm').dataset.editId = entry.id;
-            document.getElementById('title').value = entry.title;
-            document.getElementById('username').value = entry.username;
-            document.getElementById('category').value = entry.category || '';
-            document.getElementById('notes').value = entry.notes || '';
-            document.getElementById('addNewBtn').click();
+        card.querySelector('.edit-btn').addEventListener('click', async () => {
+            try {
+                const decrypted = await decryptPassword(entry.password, entry.iv);
+                const form = document.getElementById('passwordForm');
+                form.dataset.editId = entry.id;
+                document.getElementById('title').value = entry.title;
+                document.getElementById('username').value = entry.username;
+                document.getElementById('password').value = decrypted;
+                document.getElementById('website').value = entry.website || '';
+                document.getElementById('category').value = entry.category || '';
+                
+                // 显示模态框
+                document.getElementById('passwordModal').classList.remove('hidden');
+            } catch (error) {
+                console.error('编辑失败:', error);
+                alert('无法编辑密码');
+            }
         });
 
         return card;
@@ -91,6 +112,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+        
+        // 添加动画效果
+        const modalContent = modal.querySelector('div');
+        modalContent.style.opacity = '0';
+        modalContent.style.transform = 'scale(0.9)';
+        
+        setTimeout(() => {
+            modalContent.style.opacity = '1';
+            modalContent.style.transform = 'scale(1)';
+        }, 10);
     };
 
     // 复制密码到剪贴板
@@ -102,12 +133,24 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 显示复制成功提示
         const copyBtn = document.getElementById('copyPasswordBtn');
         const originalText = copyBtn.textContent;
-        copyBtn.textContent = '已复制';
-        copyBtn.classList.add('bg-green-500');
+        const originalBg = copyBtn.className;
+        
+        copyBtn.innerHTML = `
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            已复制
+        `;
+        copyBtn.className = copyBtn.className.replace('bg-blue-500', 'bg-green-500');
         
         setTimeout(() => {
-            copyBtn.textContent = originalText;
-            copyBtn.classList.remove('bg-green-500');
+            copyBtn.innerHTML = `
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                </svg>
+                复制
+            `;
+            copyBtn.className = originalBg;
         }, 1000);
     });
 
