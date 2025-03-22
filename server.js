@@ -372,6 +372,41 @@ app.post('/api/import-passwords', async (req, res) => {
     }
 });
 
+// 删除密码
+app.post('/api/delete-password', async (req, res) => {
+    try {
+        const { username, passwordId } = req.body;
+        
+        // 加载用户的密码库
+        const vaultPath = getUserVaultPath(username);
+        let vaultData = { entries: [] };
+        try {
+            vaultData = JSON.parse(await fs.readFile(vaultPath, 'utf8'));
+        } catch (error) {
+            if (error.code !== 'ENOENT') {
+                throw error;
+            }
+        }
+
+        // 找到并删除指定的密码
+        const index = vaultData.entries.findIndex(entry => entry.id === passwordId);
+        if (index === -1) {
+            return res.status(404).json({ success: false, error: '密码不存在' });
+        }
+
+        // 从数组中删除密码
+        vaultData.entries.splice(index, 1);
+        
+        // 保存更新后的密码库
+        await fs.writeFile(vaultPath, JSON.stringify(vaultData, null, 2));
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('删除密码失败:', error);
+        res.status(500).json({ success: false, error: '删除失败' });
+    }
+});
+
 // 启动服务器
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`服务器运行在端口 ${PORT}`);
