@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         card.querySelector('.view-btn').addEventListener('click', async () => {
             try {
                 const decrypted = await decryptPassword(entry.password, entry.iv);
-                showPasswordModal(entry.title, entry.username, decrypted);
+                showPasswordModal(entry.title, entry.username, decrypted, entry.website);
             } catch (error) {
                 console.error('解密失败:', error);
                 alert('无法显示密码');
@@ -100,15 +100,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // 显示密码模态框
-    const showPasswordModal = (title, username, password) => {
+    const showPasswordModal = (title, username, password, website) => {
         const modal = document.getElementById('viewPasswordModal');
         const modalTitle = document.getElementById('modalTitle');
         const modalUsername = document.getElementById('modalUsername');
         const modalPassword = document.getElementById('modalPassword');
+        const modalWebsite = document.getElementById('modalWebsite');
+        const websiteLink = modalWebsite.querySelector('a');
+        const websiteUrl = modalWebsite.querySelector('.website-url');
         
         modalTitle.textContent = title;
         modalUsername.textContent = username;
         modalPassword.value = password;
+
+        // 处理网站链接
+        if (website) {
+            let url = website;
+            // 如果URL没有协议前缀，添加 https://
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+            websiteLink.href = url;
+            websiteUrl.textContent = website;
+            modalWebsite.style.display = 'block';
+        } else {
+            modalWebsite.style.display = 'none';
+        }
         
         modal.classList.remove('hidden');
         modal.classList.add('flex');

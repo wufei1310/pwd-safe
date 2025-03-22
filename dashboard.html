@@ -110,7 +110,11 @@
                     </button>
                 </div>
                 <div>
-                    <input type="url" id="website" class="w-full px-4 py-3 border rounded-xl" placeholder="网站地址">
+                    <input type="url" 
+                           id="website" 
+                           class="w-full px-4 py-3 border rounded-xl" 
+                           placeholder="网站地址（可选）">
+                    <p class="text-sm text-gray-500 mt-1 ml-1">如果不填写网站地址，将不会显示快速访问链接</p>
                 </div>
                 <div>
                     <select id="category" class="w-full px-4 py-3 border rounded-xl bg-white">
@@ -138,6 +142,14 @@
             <div class="mb-6">
                 <h3 class="text-2xl font-bold text-gray-800 mb-2" id="modalTitle"></h3>
                 <p class="text-gray-600" id="modalUsername"></p>
+                <div id="modalWebsite" class="mt-2">
+                    <a href="#" target="_blank" class="text-blue-500 hover:text-blue-600 flex items-center text-sm">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                        </svg>
+                        <span class="website-url break-all hover:underline"></span>
+                    </a>
+                </div>
             </div>
             <div class="mb-6">
                 <label class="block text-gray-700 text-sm font-semibold mb-2">密码:</label>

@@ -8,18 +8,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const masterPassword = document.getElementById('masterPassword').value;
         
         try {
-            // 计算密码哈希
-            const encoder = new TextEncoder();
-            const passwordBuffer = encoder.encode(masterPassword);
-            const hash = await crypto.subtle.digest('SHA-256', passwordBuffer);
-            const hashHex = Array.from(new Uint8Array(hash))
-                .map(b => b.toString(16).padStart(2, '0'))
-                .join('');
+            // 直接发送用户名和密码到服务器进行验证
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username,
+                    password: masterPassword
+                })
+            });
 
-            // 验证用户名和密码
-            const isValid = await StorageManager.verifyMasterHash(username, hashHex);
+            const data = await response.json();
             
-            if (isValid) {
+            if (data.success) {
                 // 存储登录状态和用户信息
                 sessionStorage.setItem('isLoggedIn', 'true');
                 sessionStorage.setItem('currentUser', username);
