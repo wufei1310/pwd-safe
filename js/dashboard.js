@@ -458,9 +458,137 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // 删除密码
+    // 提示框控制器
+    const Modal = {
+        element: null,
+        content: null,
+        iconElement: null,
+        titleElement: null,
+        messageElement: null,
+        confirmButton: null,
+        cancelButton: null,
+
+        init() {
+            this.element = document.getElementById('alertModal');
+            this.content = this.element.querySelector('div');
+            this.iconElement = this.element.querySelector('.modal-icon');
+            this.titleElement = this.element.querySelector('.modal-title');
+            this.messageElement = this.element.querySelector('.modal-message');
+            this.confirmButton = this.element.querySelector('.modal-confirm');
+            this.cancelButton = this.element.querySelector('.modal-cancel');
+
+            // 点击背景关闭
+            this.element.addEventListener('click', (e) => {
+                if (e.target === this.element) {
+                    this.hide();
+                }
+            });
+        },
+
+        // 显示提示框
+        show({ title, message, type = 'info', showCancel = false, confirmText = '确定', cancelText = '取消' }) {
+            this.titleElement.textContent = title;
+            this.messageElement.textContent = message;
+            this.confirmButton.textContent = confirmText;
+            this.cancelButton.textContent = cancelText;
+            
+            // 设置图标
+            this.iconElement.innerHTML = this.getIcon(type);
+            
+            // 显示/隐藏取消按钮
+            this.cancelButton.classList.toggle('hidden', !showCancel);
+            
+            // 根据类型设置确认按钮样式
+            this.confirmButton.className = `px-4 py-2 rounded-lg transition-colors duration-200 ${
+                type === 'error' ? 'bg-red-500 hover:bg-red-600 text-white' :
+                type === 'success' ? 'bg-green-500 hover:bg-green-600 text-white' :
+                'bg-blue-500 hover:bg-blue-600 text-white'
+            }`;
+
+            // 显示模态框
+            this.element.classList.remove('hidden');
+            this.element.classList.add('flex');
+            
+            // 添加动画
+            setTimeout(() => {
+                this.content.classList.remove('scale-95', 'opacity-0');
+                this.content.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            // 返回 Promise
+            return new Promise((resolve) => {
+                const handleConfirm = () => {
+                    this.hide();
+                    resolve(true);
+                };
+                
+                const handleCancel = () => {
+                    this.hide();
+                    resolve(false);
+                };
+
+                this.confirmButton.onclick = handleConfirm;
+                this.cancelButton.onclick = handleCancel;
+            });
+        },
+
+        // 隐藏提示框
+        hide() {
+            this.content.classList.remove('scale-100', 'opacity-100');
+            this.content.classList.add('scale-95', 'opacity-0');
+            
+            setTimeout(() => {
+                this.element.classList.remove('flex');
+                this.element.classList.add('hidden');
+            }, 200);
+        },
+
+        // 获取图标
+        getIcon(type) {
+            const icons = {
+                success: `<svg class="w-12 h-12 mx-auto text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>`,
+                error: `<svg class="w-12 h-12 mx-auto text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>`,
+                warning: `<svg class="w-12 h-12 mx-auto text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>`,
+                info: `<svg class="w-12 h-12 mx-auto text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>`
+            };
+            return icons[type] || icons.info;
+        },
+
+        // 快捷方法
+        alert(message, title = '提示') {
+            return this.show({ title, message, type: 'info' });
+        },
+
+        confirm(message, title = '确认') {
+            return this.show({ title, message, type: 'warning', showCancel: true });
+        },
+
+        success(message, title = '成功') {
+            return this.show({ title, message, type: 'success' });
+        },
+
+        error(message, title = '错误') {
+            return this.show({ title, message, type: 'error' });
+        }
+    };
+
+    // 初始化提示框
+    Modal.init();
+
+    // 替换原有的提示框调用
     const deletePassword = async (id) => {
         try {
+            const confirmed = await Modal.confirm(`确定要删除这个密码吗？此操作不可撤销。`);
+            if (!confirmed) return;
+
             const response = await fetch('/api/delete-password', {
                 method: 'POST',
                 headers: {
@@ -486,33 +614,30 @@ document.addEventListener('DOMContentLoaded', async () => {
             await refreshPasswordList();
             
             // 显示成功消息
-            showNotification('密码已成功删除', 'success');
+            await Modal.success('密码已成功删除');
         } catch (error) {
             console.error('删除密码失败:', error);
-            showNotification('删除失败：' + error.message, 'error');
+            await Modal.error('删除失败：' + error.message);
         }
     };
 
-    // 显示通知消息
-    const showNotification = (message, type = 'info') => {
-        const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 transform transition-all duration-300 translate-y-0 ${
-            type === 'success' ? 'bg-green-500' :
-            type === 'error' ? 'bg-red-500' :
-            'bg-blue-500'
-        } text-white`;
-        notification.textContent = message;
+    // 处理文件导入
+    const handleFileImport = async (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+            await Modal.error('请选择CSV格式的文件');
+            return;
+        }
+
+        const confirmed = await Modal.confirm('导入将会添加新的密码到您的密码库中。是否继续？');
+        if (confirmed) {
+            importPasswords(file);
+        }
         
-        document.body.appendChild(notification);
-        
-        // 淡出效果
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            notification.style.transform = 'translateY(-100%)';
-            setTimeout(() => {
-                document.body.removeChild(notification);
-            }, 300);
-        }, 3000);
+        // 清除文件选择，允许选择同一个文件
+        event.target.value = '';
     };
 
     // 保存密码
@@ -607,10 +732,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            alert('密码导出成功！');
+            await Modal.success('密码导出成功！', '导出完成');
         } catch (error) {
             console.error('导出密码失败:', error);
-            alert('导出失败，请重试');
+            await Modal.error('导出失败，请重试');
         }
     };
 
@@ -668,30 +793,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             // 刷新密码列表
             await refreshPasswordList();
-            alert(`成功导入 ${result.count} 个密码！`);
+            await Modal.success(`成功导入 ${result.count} 个密码！`, '导入完成');
         } catch (error) {
             console.error('导入密码失败:', error);
-            alert('导入失败：' + error.message);
+            await Modal.error('导入失败：' + error.message);
         }
-    };
-
-    // 处理文件导入
-    const handleFileImport = (event) => {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
-            alert('请选择CSV格式的文件');
-            return;
-        }
-
-        const confirmImport = confirm('导入将会添加新的密码到您的密码库中。是否继续？');
-        if (confirmImport) {
-            importPasswords(file);
-        }
-        
-        // 清除文件选择，允许选择同一个文件
-        event.target.value = '';
     };
 
     // 初始化应用
