@@ -68,7 +68,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 查看按钮点击事件
         card.querySelector('.view-btn').addEventListener('click', async () => {
             try {
-                const decrypted = await decryptPassword(entry.password, entry.iv);
+                const decrypted = await decryptPassword(
+                    entry.password,
+                    entry.iv,
+                    entry.authTag,
+                    entry.salt
+                );
                 showPasswordModal(entry.title, entry.username, decrypted, entry.website);
             } catch (error) {
                 console.error('解密失败:', error);
@@ -79,7 +84,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // 编辑按钮点击事件
         card.querySelector('.edit-btn').addEventListener('click', async () => {
             try {
-                const decrypted = await decryptPassword(entry.password, entry.iv);
+                const decrypted = await decryptPassword(
+                    entry.password,
+                    entry.iv,
+                    entry.authTag,
+                    entry.salt
+                );
                 const form = document.getElementById('passwordForm');
                 form.dataset.editId = entry.id;
                 document.getElementById('title').value = entry.title;
@@ -228,21 +238,28 @@ document.addEventListener('DOMContentLoaded', async () => {
     // 加密密码数据
     const encryptPassword = async (password) => {
         try {
-            const key = await deriveKey(masterKey);
-            const encoder = new TextEncoder();
-            const data = encoder.encode(password);
-            const iv = crypto.getRandomValues(new Uint8Array(12));
-            
-            const encrypted = await crypto.subtle.encrypt(
-                { name: 'AES-GCM', iv: iv },
-                key,
-                data
-            );
-            
-            return {
-                data: Array.from(new Uint8Array(encrypted)).map(b => b.toString(16).padStart(2, '0')).join(''),
-                iv: Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('')
-            };
+            const masterPassword = sessionStorage.getItem('masterKey');
+            const response = await fetch('/api/encrypt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    password,
+                    masterPassword
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('加密请求失败');
+            }
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || '加密失败');
+            }
+
+            return result.encrypted;
         } catch (error) {
             console.error('加密失败:', error);
             throw error;
@@ -250,20 +267,40 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // 解密密码数据
-    const decryptPassword = async (encryptedData, iv) => {
+    const decryptPassword = async (encryptedData, iv, authTag, salt) => {
         try {
-            const key = await deriveKey(masterKey);
-            const decoder = new TextDecoder();
-            const encryptedArray = new Uint8Array(encryptedData.match(/.{2}/g).map(byte => parseInt(byte, 16)));
-            const ivArray = new Uint8Array(iv.match(/.{2}/g).map(byte => parseInt(byte, 16)));
-            
-            const decrypted = await crypto.subtle.decrypt(
-                { name: 'AES-GCM', iv: ivArray },
-                key,
-                encryptedArray
-            );
-            
-            return decoder.decode(decrypted);
+            const masterPassword = sessionStorage.getItem('masterKey');
+            console.log('解密请求数据:', {
+                encryptedData,
+                iv,
+                authTag,
+                salt,
+                masterPassword
+            });
+            const response = await fetch('/api/decrypt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    encryptedData,
+                    iv,
+                    authTag,
+                    salt,
+                    masterPassword
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('解密请求失败');
+            }
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || '解密失败');
+            }
+
+            return result.decrypted;
         } catch (error) {
             console.error('解密失败:', error);
             throw error;
@@ -340,7 +377,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const entry = currentVault.entries.find(e => e.id === id);
             if (entry) {
-                const decryptedPassword = await decryptPassword(entry.password, entry.iv);
+                const decryptedPassword = await decryptPassword(
+                    entry.password,
+                    entry.iv,
+                    entry.authTag,
+                    entry.salt
+                );
                 alert(`
                     标题: ${entry.title}
                     用户名: ${entry.username}
@@ -360,7 +402,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         try {
             const entry = currentVault.entries.find(e => e.id === id);
             if (entry) {
-                const decryptedPassword = await decryptPassword(entry.password, entry.iv);
+                const decryptedPassword = await decryptPassword(
+                    entry.password,
+                    entry.iv,
+                    entry.authTag,
+                    entry.salt
+                );
                 
                 document.getElementById('title').value = entry.title;
                 document.getElementById('username').value = entry.username;
@@ -399,6 +446,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const encrypted = await encryptPassword(formData.password);
             formData.password = encrypted.data;
             formData.iv = encrypted.iv;
+            formData.authTag = encrypted.authTag;
+            formData.salt = encrypted.salt;
 
             // 保存到密码库
             if (!currentVault.entries) {
