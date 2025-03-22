@@ -140,6 +140,8 @@ data/
 
 ## 部署说明
 
+### 1. 手动部署
+
 1. 服务器配置
    - 默认监听 3000 端口
    - 支持自定义端口 (PORT 环境变量)
@@ -149,6 +151,192 @@ data/
    - 使用 HTTPS
    - 配置反向代理 (如 Nginx)
    - 设置适当的防火墙规则
+
+### 2. 自动化部署
+
+#### PM2 进程管理
+
+1. 安装 PM2
+```bash
+npm install -g pm2
+```
+
+2. 创建 ecosystem.config.js
+```javascript
+module.exports = {
+  apps: [{
+    name: "pwd-safe",
+    script: "server.js",
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: "1G",
+    env: {
+      NODE_ENV: "development",
+      PORT: 3000
+    },
+    env_production: {
+      NODE_ENV: "production",
+      PORT: 80
+    }
+  }]
+};
+```
+
+3. 启动应用
+```bash
+# 开发环境
+pm2 start ecosystem.config.js
+
+# 生产环境
+pm2 start ecosystem.config.js --env production
+```
+
+4. 常用命令
+```bash
+pm2 list            # 查看应用列表
+pm2 monit           # 监控应用
+pm2 logs            # 查看日志
+pm2 restart pwd-safe # 重启应用
+```
+
+#### Docker 容器化部署
+
+1. 创建 Dockerfile
+```dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+
+EXPOSE 3000
+CMD ["node", "server.js"]
+```
+
+2. 创建 .dockerignore
+```
+node_modules
+npm-debug.log
+data
+.git
+.gitignore
+```
+
+3. 构建镜像
+```bash
+docker build -t pwd-safe .
+```
+
+4. 运行容器
+```bash
+docker run -d \
+  --name pwd-safe \
+  -p 3000:3000 \
+  -v $(pwd)/data:/app/data \
+  pwd-safe
+```
+
+#### GitHub Actions 自动部署
+
+1. 创建 .github/workflows/deploy.yml
+```yaml
+name: Deploy
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Deploy to server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /path/to/pwd-safe
+            git pull
+            npm install
+            pm2 restart pwd-safe
+```
+
+2. 配置 GitHub Secrets
+   - SERVER_HOST: 服务器地址
+   - SERVER_USER: SSH 用户名
+   - SSH_PRIVATE_KEY: SSH 私钥
+
+#### Nginx 反向代理配置
+
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
+```
+
+### 3. 部署检查清单
+
+- [ ] 确保 Node.js 环境正确配置
+- [ ] 检查所有环境变量设置
+- [ ] 验证数据目录权限
+- [ ] 配置日志记录
+- [ ] 设置错误监控
+- [ ] 配置自动备份
+- [ ] 测试所有功能
+- [ ] 检查安全设置
+
+### 4. 监控和维护
+
+1. 应用监控
+   - 使用 PM2 监控
+   - 配置日志轮转
+   - 设置资源使用告警
+
+2. 数据备份
+```bash
+# 创建备份脚本
+#!/bin/bash
+backup_dir="/backup/pwd-safe/$(date +%Y%m%d)"
+mkdir -p $backup_dir
+cp -r /path/to/pwd-safe/data/* $backup_dir/
+```
+
+3. 更新部署
+```bash
+# 更新应用
+git pull
+npm install
+pm2 restart pwd-safe
+
+# 回滚部署
+git reset --hard HEAD^
+npm install
+pm2 restart pwd-safe
+```
 
 ## 使用说明
 
