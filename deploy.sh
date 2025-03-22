@@ -36,6 +36,7 @@ fi
 
 # 1. 拉取最新代码
 echo "1. 从 GitHub 拉取最新代码..."
+sudo apt-get update && sudo apt-get upgrade
 git fetch origin "$BRANCH"
 git reset --hard "origin/$BRANCH"
 
