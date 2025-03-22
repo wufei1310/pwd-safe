@@ -1,0 +1,12 @@
+{
+  "name": "pwd-safe",
+  "version": "1.0.0",
+  "description": "本地密码管理工具",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+} 

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>密码管理器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="js/crypto.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/login.js"></script>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen flex items-center justify-center">
+        <div class="bg-white p-8 rounded-lg shadow-md w-96">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-bold text-gray-800">密码管理器</h1>
+                <p class="text-gray-600 mt-2">请输入用户名和主密码</p>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <input type="text" 
+                           id="username" 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                           placeholder="用户名"
+                           required>
+                </div>
+                <div>
+                    <input type="password" 
+                           id="masterPassword" 
+                           class="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" 
+                           placeholder="主密码"
+                           required>
+                </div>
+                <button type="submit" 
+                        class="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 transition duration-200">
+                    登录
+                </button>
+            </form>
+            <div class="mt-4 text-center">
+                <a href="setup.html" class="text-blue-500 hover:text-blue-600 text-sm">首次使用？创建新用户</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 
