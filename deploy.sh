@@ -5,6 +5,7 @@
 REPO_URL="https://github.com/wufei1310/pwd-safe.git"
 BRANCH="main"
 PROJECT_DIR="/data/project/pwd-safe"
+DATA_DIR="/data/project/data"
 PORT=3000
 APP_NAME="pwd-safe"
 
@@ -27,6 +28,7 @@ echo "开始部署 $APP_NAME 项目..."
 if [ ! -d "$PROJECT_DIR" ]; then
     echo "0. 创建项目目录并克隆代码..."
     mkdir -p "$PROJECT_DIR"
+    mkdir -p "$DATA_DIR"
     git clone "$REPO_URL" "$PROJECT_DIR"
     cd "$PROJECT_DIR"
 else
