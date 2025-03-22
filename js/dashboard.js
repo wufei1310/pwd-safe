@@ -373,6 +373,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         // 导出密码
         document.getElementById('exportBtn').addEventListener('click', exportPasswords);
+
+        // 导入密码
+        document.getElementById('importBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        // 处理文件导入
+        document.getElementById('fileInput').addEventListener('change', handleFileImport);
     };
 
     // 查看密码
@@ -539,6 +547,86 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.error('导出密码失败:', error);
             alert('导出失败，请重试');
         }
+    };
+
+    // 导入密码
+    const importPasswords = async (file) => {
+        try {
+            const text = await file.text();
+            // 添加 BOM 检查和移除
+            const csvContent = text.replace(/^\uFEFF/, '');
+            const lines = csvContent.split('\n');
+            const headers = lines[0].split(',');
+            
+            // 验证CSV格式
+            const requiredHeaders = ['标题', '用户名', '密码', '网站', '分类', '创建时间'];
+            if (!requiredHeaders.every(h => headers.includes(h))) {
+                throw new Error('无效的CSV格式，请使用导出功能生成的标准格式');
+            }
+
+            // 解析CSV数据
+            const passwords = lines.slice(1)
+                .filter(line => line.trim())
+                .map(line => {
+                    const values = line.split(',').map(v => v.trim().replace(/^"|"$/g, ''));
+                    return {
+                        title: values[headers.indexOf('标题')],
+                        username: values[headers.indexOf('用户名')],
+                        password: values[headers.indexOf('密码')],
+                        website: values[headers.indexOf('网站')],
+                        category: values[headers.indexOf('分类')],
+                        createdAt: new Date(values[headers.indexOf('创建时间')]).toISOString()
+                    };
+                });
+
+            // 发送到服务器
+            const response = await fetch('/api/import-passwords', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: currentUser,
+                    masterPassword: sessionStorage.getItem('masterKey'),
+                    passwords
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('导入请求失败');
+            }
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || '导入失败');
+            }
+
+            // 刷新密码列表
+            await refreshPasswordList();
+            alert(`成功导入 ${result.count} 个密码！`);
+        } catch (error) {
+            console.error('导入密码失败:', error);
+            alert('导入失败：' + error.message);
+        }
+    };
+
+    // 处理文件导入
+    const handleFileImport = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (file.type !== 'text/csv' && !file.name.endsWith('.csv')) {
+            alert('请选择CSV格式的文件');
+            return;
+        }
+
+        const confirmImport = confirm('导入将会添加新的密码到您的密码库中。是否继续？');
+        if (confirmImport) {
+            importPasswords(file);
+        }
+        
+        // 清除文件选择，允许选择同一个文件
+        event.target.value = '';
     };
 
     // 初始化应用

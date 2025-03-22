@@ -318,6 +318,60 @@ app.post('/api/export-passwords', async (req, res) => {
     }
 });
 
+// 导入密码
+app.post('/api/import-passwords', async (req, res) => {
+    try {
+        const { username, masterPassword, passwords } = req.body;
+        
+        // 加载用户的密码库
+        const vaultPath = getUserVaultPath(username);
+        let vaultData = { entries: [] };
+        try {
+            vaultData = JSON.parse(await fs.readFile(vaultPath, 'utf8'));
+        } catch (error) {
+            if (error.code !== 'ENOENT') {
+                throw error;
+            }
+        }
+
+        // 加密所有密码
+        for (const entry of passwords) {
+            try {
+                const salt = crypto.randomBytes(16);
+                const key = deriveKey(masterPassword, salt);
+                const encrypted = encryptData(entry.password, key);
+                
+                vaultData.entries.push({
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                    title: entry.title,
+                    username: entry.username,
+                    password: encrypted.data,
+                    website: entry.website,
+                    category: entry.category,
+                    iv: encrypted.iv,
+                    authTag: encrypted.authTag,
+                    salt: salt.toString('hex'),
+                    createdAt: entry.createdAt || new Date().toISOString()
+                });
+            } catch (error) {
+                console.error('加密单个密码失败:', error);
+                // 继续处理其他密码
+            }
+        }
+        
+        // 保存更新后的密码库
+        await fs.writeFile(vaultPath, JSON.stringify(vaultData, null, 2));
+        
+        res.json({ 
+            success: true, 
+            count: passwords.length 
+        });
+    } catch (error) {
+        console.error('导入密码失败:', error);
+        res.status(500).json({ success: false, error: '导入失败' });
+    }
+});
+
 // 启动服务器
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`服务器运行在端口 ${PORT}`);
