@@ -278,6 +278,46 @@ app.post('/api/decrypt', async (req, res) => {
     }
 });
 
+// 导出密码
+app.post('/api/export-passwords', async (req, res) => {
+    try {
+        const { username, masterPassword } = req.body;
+        
+        // 加载用户的密码库
+        const vaultPath = getUserVaultPath(username);
+        const vaultData = JSON.parse(await fs.readFile(vaultPath, 'utf8'));
+        
+        // 解密所有密码
+        const decryptedEntries = [];
+        for (const entry of vaultData.entries || []) {
+            try {
+                const key = deriveKey(masterPassword, Buffer.from(entry.salt, 'hex'));
+                const decryptedPassword = decryptData(entry.password, entry.iv, entry.authTag, key);
+                
+                decryptedEntries.push({
+                    title: entry.title,
+                    username: entry.username,
+                    password: decryptedPassword,
+                    website: entry.website,
+                    category: entry.category,
+                    createdAt: entry.createdAt
+                });
+            } catch (error) {
+                console.error('解密单个密码失败:', error);
+                // 继续处理其他密码
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            data: decryptedEntries 
+        });
+    } catch (error) {
+        console.error('导出密码失败:', error);
+        res.status(500).json({ success: false, error: '导出失败' });
+    }
+});
+
 // 启动服务器
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`服务器运行在端口 ${PORT}`);

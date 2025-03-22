@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# 服务器环境中默认已安装 pm2、nodejs、npm、git
 # 项目配置变量
 REPO_URL="https://github.com/wufei1310/pwd-safe.git"
 BRANCH="main"

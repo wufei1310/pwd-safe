@@ -370,6 +370,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 alert('保存失败，请重试');
             }
         });
+
+        // 导出密码
+        document.getElementById('exportBtn').addEventListener('click', exportPasswords);
     };
 
     // 查看密码
@@ -473,6 +476,68 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error('保存密码失败:', error);
             throw error;
+        }
+    };
+
+    // 导出密码
+    const exportPasswords = async () => {
+        try {
+            const response = await fetch('/api/export-passwords', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: currentUser,
+                    masterPassword: sessionStorage.getItem('masterKey')
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('导出请求失败');
+            }
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || '导出失败');
+            }
+
+            // 格式化导出数据
+            const exportData = result.data.map(entry => ({
+                标题: entry.title,
+                用户名: entry.username,
+                密码: entry.password,
+                网站: entry.website || '',
+                分类: entry.category || '',
+                创建时间: new Date(entry.createdAt).toLocaleString()
+            }));
+
+            // 转换为CSV格式
+            const headers = ['标题', '用户名', '密码', '网站', '分类', '创建时间'];
+            const csv = [
+                headers.join(','),
+                ...exportData.map(row => headers.map(header => {
+                    const value = row[header] || '';
+                    // 处理包含逗号的值
+                    return value.includes(',') ? `"${value}"` : value;
+                }).join(','))
+            ].join('\n');
+
+            // 创建并下载文件
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `密码导出_${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('密码导出成功！');
+        } catch (error) {
+            console.error('导出密码失败:', error);
+            alert('导出失败，请重试');
         }
     };
 
