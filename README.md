@@ -62,10 +62,6 @@ git clone https://github.com/wufei1310/pwd-safe.git
 # Linux/Mac
 ./deploy.sh
 
-# Windows
-deploy.bat
-```
-
 3. 访问应用
 ```
 http://localhost:3000
@@ -95,14 +91,6 @@ npm install
 node server.js
 ```
 
-### Docker 部署
-```bash
-docker run -d \
-  --name pwd-safe \
-  -p 3000:3000 \
-  -v /data/project/data:/app/data \
-  wufei1310/pwd-safe
-```
 
 ### PM2 部署
 ```bash
@@ -135,26 +123,6 @@ ps aux | grep node
 
 # 监控端口
 netstat -nltp | grep 3000
-```
-
-## 📝 数据备份
-
-```bash
-# 备份数据
-cp -r /data/project/data /backup/pwd-safe-$(date +%Y%m%d)
-
-# 还原数据
-cp -r /backup/pwd-safe-20240101/* /data/project/data/
-```
-
-## 🔄 更新维护
-
-```bash
-# 更新代码
-git pull
-
-# 重启服务
-node server.js
 ```
 
 ## �� 为什么选择本项目？
