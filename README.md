@@ -88,6 +88,7 @@ node server.js
 ```bash
 pm2 start server.js --name pwd-safe
 ```
+![image](https://github.com/user-attachments/assets/0b8c21b2-fefa-45be-8251-cb7de242082f)
 
 ## 📋 环境要求
 
