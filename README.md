@@ -63,17 +63,9 @@ git clone https://github.com/wufei1310/pwd-safe.git
 ./deploy.sh
 
 3. 访问应用
-```
+
 http://localhost:3000
 ```
-
-## 💡 特色功能
-
-- 多用户支持
-- 密码分类管理
-- 导入/导出功能
-- 一键部署
-- 简单备份/迁移
 
 ## 🛠️ 部署方案
 
