@@ -4,7 +4,7 @@ const path = require('path');
 const crypto = require('crypto');
 
 const app = express();
-const PORT = 80;
+const PORT = 3000;
 
 // 数据文件路径 - 移到项目目录的上一级
 const DATA_DIR = path.join(__dirname, '..', 'data');
